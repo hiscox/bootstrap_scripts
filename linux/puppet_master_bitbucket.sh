@@ -17,15 +17,17 @@ curl -sL $pe_source | tar xz --strip-components=1 --directory /tmp
 # create keys
 mkdir -p /etc/puppetlabs/puppetserver/ssh
 ssh-keygen -f /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa -N ''
+
+# add deploy keys to repos
 curl -X POST --user "$bitbucket_username:$bitbucket_password" \
 "https://api.bitbucket.org/1.0/repositories/$bitbucket_team/$control_repo_name/deploy-keys" \
 --data-urlencode "key=$(cat /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa.pub)"
 
-curl -X GET --user "$bitbucket_username:$bitbucket_password" \
-"https://api.bitbucket.org/1.0/repositories/$bitbucket_team/$control_repo_name/src/production/Puppetfile" \
+curl -X -s GET --user "$bitbucket_username:$bitbucket_password" \
+"https://api.bitbucket.org/2.0/repositories/$bitbucket_team/$control_repo_name/src/production/Puppetfile" \
 | grep "ssh://git@bitbucket.org/$bitbucket_team/" \
 | sed "s|:git => 'ssh://git@bitbucket.org/$bitbucket_team/||" | sed "s|.git',||" \
-| sed -e 's/^[[:space:]]*//' | while read -r repo; do
+| sed -e 's|^[[:space:]]*||' | while read -r repo; do
   curl -X POST --user "$bitbucket_username:$bitbucket_password" \
   "https://api.bitbucket.org/1.0/repositories/$bitbucket_team/$repo/deploy-keys" \
   --data-urlencode "key=$(cat /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa.pub)"
