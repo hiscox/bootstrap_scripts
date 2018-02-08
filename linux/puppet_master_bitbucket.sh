@@ -21,6 +21,16 @@ curl -X POST --user "$bitbucket_username:$bitbucket_password" \
 "https://api.bitbucket.org/1.0/repositories/$bitbucket_team/$control_repo_name/deploy-keys" \
 --data-urlencode "key=$(cat /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa.pub)"
 
+curl -X GET --user "$bitbucket_username:$bitbucket_password" \
+"https://api.bitbucket.org/1.0/repositories/$bitbucket_team/$control_repo_name/src/production/Puppetfile" \
+| grep "ssh://git@bitbucket.org/$bitbucket_team/" \
+| sed "s|:git => 'ssh://git@bitbucket.org/$bitbucket_team/||" | sed "s|.git',||" \
+| sed -e 's/^[[:space:]]*//' | while read -r repo; do
+  curl -X POST --user "$bitbucket_username:$bitbucket_password" \
+  "https://api.bitbucket.org/1.0/repositories/$bitbucket_team/$repo/deploy-keys" \
+  --data-urlencode "key=$(cat /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa.pub)"
+done
+
 # install Puppet Enterprise"
 echo "{
   \"console_admin_password\": \"$console_admin_password\",
@@ -49,8 +59,8 @@ curl -sL https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64 -o /
 chmod +x /tmp/jq
 mv /tmp/jq /usr/bin/jq
 token_file='/etc/puppetlabs/puppetserver/.puppetlabs/code_manager_service_user_token'
-token=/usr/bin/jq '.token' $token_file -r
-$token > $token_file.raw
+token=$(/usr/bin/jq '.token' $token_file -r)
+echo $token > $token_file.raw
 
 # add webhook to control repo
 webhook="https://$public_ip:8170/code-manager/v1/webhook?type=bitbucket&token=$token"
@@ -84,15 +94,7 @@ chmod 0400 /etc/puppetlabs/puppet/eyaml/*.pem
 # code deploy
 /opt/puppetlabs/bin/puppet-code deploy --all --wait --token-file=$token_file.raw
 
-# wait for puppet console ui
-end=$((SECONDS+1500))
-while [ $SECONDS -lt $end ]; do
-  if curl -sk "https://${hostname}.${dns_suffix}/auth/login?redirect=/" | grep -q '2017 Puppet' ; then
-    # run puppet agent a few times to complete configuration
-    /opt/puppetlabs/bin/puppet agent -t
-    /opt/puppetlabs/bin/puppet agent -t
-    /opt/puppetlabs/bin/puppet agent -t
-    break
-  fi
-  sleep 10
-done
+# run puppet agent a few times to complete configuration
+/opt/puppetlabs/bin/puppet agent -t
+/opt/puppetlabs/bin/puppet agent -t
+/opt/puppetlabs/bin/puppet agent -t
