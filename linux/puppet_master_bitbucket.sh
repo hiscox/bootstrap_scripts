@@ -21,9 +21,9 @@ ssh-keygen -f /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa -N ''
 # add deploy keys to repos
 curl -X POST --user "$bitbucket_username:$bitbucket_password" \
 "https://api.bitbucket.org/1.0/repositories/$bitbucket_team/$control_repo_name/deploy-keys" \
---data-urlencode "key=$(cat /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa.pub)"
+--data-urlencode "key=$(cat /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa.pub)&label=$console_url"
 
-curl -X -s GET --user "$bitbucket_username:$bitbucket_password" \
+curl -s -X GET --user "$bitbucket_username:$bitbucket_password" \
 "https://api.bitbucket.org/2.0/repositories/$bitbucket_team/$control_repo_name/src/production/Puppetfile" \
 | grep "ssh://git@bitbucket.org/$bitbucket_team/" \
 | sed "s|:git => 'ssh://git@bitbucket.org/$bitbucket_team/||" | sed "s|.git',||" \
@@ -100,3 +100,36 @@ chmod 0400 /etc/puppetlabs/puppet/eyaml/*.pem
 /opt/puppetlabs/bin/puppet agent -t
 /opt/puppetlabs/bin/puppet agent -t
 /opt/puppetlabs/bin/puppet agent -t
+
+# allow agents to specify environment
+id=$(curl -s -X GET "https://$(hostname --fqdn):4433/classifier-api/v1/groups" \
+-H "Content-Type: application/json" \
+--cert "/etc/puppetlabs/puppet/ssl/certs/$(hostname --fqdn).pem" \
+--key "/etc/puppetlabs/puppet/ssl/private_keys/$(hostname --fqdn).pem" \
+--cacert "/etc/puppetlabs/puppet/ssl/certs/ca.pem" \
+| /usr/bin/jq '.[] | select(.name=="Agent-specified environment)"' \
+| /usr/bin/jq -r '.["id"]')
+
+curl -X POST "https://$(hostname --fqdn):4433/classifier-api/v1/groups/$id" \
+-H "Content-Type: application/json" \
+--cert "/etc/puppetlabs/puppet/ssl/certs/$(hostname --fqdn).pem" \
+--key "/etc/puppetlabs/puppet/ssl/private_keys/$(hostname --fqdn).pem" \
+--cacert "/etc/puppetlabs/puppet/ssl/certs/ca.pem" \
+--data '
+{
+  "rule": [
+    "and",
+    [
+      "not",
+      [
+        "=",
+        [
+          "fact",
+          "agent_specified_environment"
+        ],
+        "production"
+      ]
+    ]
+  ]
+}
+'
