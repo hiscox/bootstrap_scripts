@@ -1,14 +1,14 @@
 #!/bin/bash
 
-pe_version=$0
-bitbucket_username=$1
-bitbucket_password=$2
-bitbucket_team=$3
-control_repo_name=$4
+pe_version=$1
+bitbucket_username=$2
+bitbucket_password=$3
+bitbucket_team=$4
+control_repo_name=$5
 control_repo_url="git@bitbucket.org:$bitbucket_team/$control_repo_name.git"
-console_admin_password=$5
-console_url=$6
-public_ip=$7
+console_admin_password=$6
+console_url=$7
+public_ip=$8
 
 # download Puppet Enterprise installer
 pe_source="https://s3.amazonaws.com/pe-builds/released/$pe_version/puppet-enterprise-$pe_version-el-7-x86_64.tar.gz"
@@ -25,7 +25,7 @@ curl -X POST --user "$bitbucket_username:$bitbucket_password" \
 echo "{
   \"console_admin_password\": \"$console_admin_password\",
   \"puppet_enterprise::puppet_master_host\": \"$(hostname --fqdn)\",
-  \"pe_install::puppet_master_dnsaltnames\": [\"puppet\", \"$console_url\"]
+  \"pe_install::puppet_master_dnsaltnames\": [\"puppet\", \"$console_url\"],
   \"puppet_enterprise::profile::master::code_manager_auto_configure\": true,
   \"puppet_enterprise::profile::master::r10k_remote\": \"${control_repo_url}\",
   \"puppet_enterprise::profile::master::r10k_private_key\": \"/etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa\",

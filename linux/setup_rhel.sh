@@ -1,7 +1,7 @@
 #!/bin/bash
 
-ip_address=$0
-dns_suffix=$1
+ip_address=$1
+dns_suffix=$2
 
 # set hostname in hosts
 if ! grep -Fq "$ip_address $(hostname).$dns_suffix $(hostname)" /etc/hosts ; then
