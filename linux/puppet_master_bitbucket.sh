@@ -107,7 +107,7 @@ id=$(curl -s -X GET "https://$(hostname --fqdn):4433/classifier-api/v1/groups" \
 --cert "/etc/puppetlabs/puppet/ssl/certs/$(hostname --fqdn).pem" \
 --key "/etc/puppetlabs/puppet/ssl/private_keys/$(hostname --fqdn).pem" \
 --cacert "/etc/puppetlabs/puppet/ssl/certs/ca.pem" \
-| /usr/bin/jq '.[] | select(.name=="Agent-specified environment)"' \
+| /usr/bin/jq '.[] | select(.name=="Agent-specified environment")' \
 | /usr/bin/jq -r '.["id"]')
 
 curl -X POST "https://$(hostname --fqdn):4433/classifier-api/v1/groups/$id" \
@@ -131,5 +131,4 @@ curl -X POST "https://$(hostname --fqdn):4433/classifier-api/v1/groups/$id" \
       ]
     ]
   ]
-}
-'
+}'
