@@ -18,11 +18,12 @@ curl -sL $pe_source | tar xz --strip-components=1 --directory /tmp
 mkdir -p /etc/puppetlabs/puppetserver/ssh
 ssh-keygen -f /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa -N ''
 
-# add deploy keys to repos
+# add deploy key to control repo
 curl -X POST --user "$bitbucket_username:$bitbucket_password" \
 "https://api.bitbucket.org/1.0/repositories/$bitbucket_team/$control_repo_name/deploy-keys" \
 --data-urlencode "key=$(cat /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa.pub)&label=$console_url"
 
+# read Puppetfile and add deploy key to all repos
 curl -s -X GET --user "$bitbucket_username:$bitbucket_password" \
 "https://api.bitbucket.org/2.0/repositories/$bitbucket_team/$control_repo_name/src/production/Puppetfile" \
 | grep "ssh://git@bitbucket.org/$bitbucket_team/" \
@@ -30,7 +31,7 @@ curl -s -X GET --user "$bitbucket_username:$bitbucket_password" \
 | sed -e 's|^[[:space:]]*||' | while read -r repo; do
   curl -X POST --user "$bitbucket_username:$bitbucket_password" \
   "https://api.bitbucket.org/1.0/repositories/$bitbucket_team/$repo/deploy-keys" \
-  --data-urlencode "key=$(cat /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa.pub)"
+  --data-urlencode "key=$(cat /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa.pub)&label=$console_url"
 done
 
 # install Puppet Enterprise"
@@ -87,7 +88,7 @@ mv /tmp/keys/private_key.pkcs7.pem /etc/puppetlabs/puppet/eyaml/private_key.pkcs
 mv /tmp/keys/public_key.pkcs7.pem /etc/puppetlabs/puppet/eyaml/public_key.pkcs7.pem
 echo "---
 eyaml_public_key: |
-$(cat /etc/puppetlabs/puppet/eyaml/public_key.pkcs7.pem | sed 's/^/  /')" > /opt/puppetlabs/facter/facts.d/eyaml_public_key.txt
+$(cat /etc/puppetlabs/puppet/eyaml/public_key.pkcs7.pem | sed 's/^/  /')" > /opt/puppetlabs/facter/facts.d/eyaml_public_key.yaml
 service pe-puppetserver reload
 chown -R pe-puppet:pe-puppet /etc/puppetlabs/puppet/eyaml
 chmod -R 0500 /etc/puppetlabs/puppet/eyaml
@@ -132,3 +133,9 @@ curl -X POST "https://$(hostname --fqdn):4433/classifier-api/v1/groups/$id" \
     ]
   ]
 }'
+
+# cleanup
+rm -rf /tmp/pe.conf
+rm -rf /tmp/keys
+rm -rf /tmp/puppet-enterprise-installer
+rm -rf /tmp/puppet-enterprise-uninstaller
