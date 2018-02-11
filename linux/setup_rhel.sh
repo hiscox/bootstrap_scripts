@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 ip_address=$1
 dns_suffix=$2

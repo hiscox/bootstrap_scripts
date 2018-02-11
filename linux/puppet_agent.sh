@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # set hostname in hosts
 if ! grep -Fq "${ip_address} ${hostname}.${dns_suffix} ${hostname}" /etc/hosts ; then

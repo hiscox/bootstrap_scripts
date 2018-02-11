@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 pe_version=$1
 bitbucket_username=$2
