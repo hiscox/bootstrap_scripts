@@ -10,8 +10,8 @@ fi
 sed -i "s/reddog.microsoft.com/${dns_suffix}/g" /etc/resolv.conf
 
 # turn off local firewall as we have subnet and NIC level NSGs
-systemctl stop firewalld.service
-systemctl disable firewalld.service
+systemctl --quiet stop firewalld.service
+systemctl --quiet disable firewalld.service
 
 # yum update
 yum update -y -q -e 0

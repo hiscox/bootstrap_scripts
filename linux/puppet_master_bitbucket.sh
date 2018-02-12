@@ -13,24 +13,24 @@ public_ip=$8
 
 # download Puppet Enterprise installer
 pe_source="https://s3.amazonaws.com/pe-builds/released/$pe_version/puppet-enterprise-$pe_version-el-7-x86_64.tar.gz"
-curl -sL $pe_source | tar xz --strip-components=1 --directory /tmp
+curl --silent --show-error --location $pe_source | tar xz --strip-components=1 --directory /tmp
 
 # create keys
 mkdir -p /etc/puppetlabs/puppetserver/ssh
 ssh-keygen -f /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa -N ''
 
 # add deploy key to control repo
-curl -X POST --user "$bitbucket_username:$bitbucket_password" \
+curl --silent --show-error -X POST --user "$bitbucket_username:$bitbucket_password" \
 "https://api.bitbucket.org/1.0/repositories/$bitbucket_team/$control_repo_name/deploy-keys" \
 --data-urlencode "key=$(cat /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa.pub)&label=$console_url"
 
 # read Puppetfile and add deploy key to all repos
-curl -s -X GET --user "$bitbucket_username:$bitbucket_password" \
+curl --silent --show-error -X GET --user "$bitbucket_username:$bitbucket_password" \
 "https://api.bitbucket.org/2.0/repositories/$bitbucket_team/$control_repo_name/src/production/Puppetfile" \
 | grep "ssh://git@bitbucket.org/$bitbucket_team/" \
 | sed "s|:git => 'ssh://git@bitbucket.org/$bitbucket_team/||" | sed "s|.git',||" \
 | sed -e 's|^[[:space:]]*||' | while read -r repo; do
-  curl -X POST --user "$bitbucket_username:$bitbucket_password" \
+  curl --silent --show-error -X POST --user "$bitbucket_username:$bitbucket_password" \
   "https://api.bitbucket.org/1.0/repositories/$bitbucket_team/$repo/deploy-keys" \
   --data-urlencode "key=$(cat /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa.pub)&label=$console_url"
 done
@@ -58,8 +58,8 @@ chown pe-puppet:pe-puppet /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa
 chown -R pe-puppet:pe-puppet /etc/puppetlabs/code/
 /opt/puppetlabs/bin/puppet apply -e "include pe_code_manager_webhook::code_manager"
 echo 'code_manager_mv_old_code=true' > /opt/puppetlabs/facter/facts.d/code_manager_mv_old_code.txt
-/opt/puppetlabs/bin/puppet agent -t
-curl -sL https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64 -o /tmp/jq
+/opt/puppetlabs/bin/puppet agent --onetime --no-daemonize
+curl --silent --show-error --location https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64 -o /tmp/jq
 chmod +x /tmp/jq
 mv /tmp/jq /usr/bin/jq
 token_file='/etc/puppetlabs/puppetserver/.puppetlabs/code_manager_service_user_token'
@@ -68,7 +68,7 @@ echo $token > $token_file.raw
 
 # add webhook to control repo
 webhook="https://$public_ip:8170/code-manager/v1/webhook?type=bitbucket&token=$token"
-curl -X POST --user "$bitbucket_username:$bitbucket_password" -H 'Content-Type: application/json' \
+curl --silent --show-error -X POST --user "$bitbucket_username:$bitbucket_password" -H 'Content-Type: application/json' \
 "https://api.bitbucket.org/2.0/repositories/$bitbucket_team/$control_repo_name/hooks" --data "
 {
   \"description\": \"$console_url\",
@@ -99,12 +99,12 @@ chmod 0400 /etc/puppetlabs/puppet/eyaml/*.pem
 /opt/puppetlabs/bin/puppet-code deploy --all --wait --token-file=$token_file.raw
 
 # run puppet agent a few times to complete configuration
-/opt/puppetlabs/bin/puppet agent -t
-/opt/puppetlabs/bin/puppet agent -t
-/opt/puppetlabs/bin/puppet agent -t
+/opt/puppetlabs/bin/puppet agent --onetime --no-daemonize
+/opt/puppetlabs/bin/puppet agent --onetime --no-daemonize
+/opt/puppetlabs/bin/puppet agent --onetime --no-daemonize
 
 # allow agents to specify environment
-id=$(curl -s -X GET "https://$(hostname --fqdn):4433/classifier-api/v1/groups" \
+id=$(curl --silent --show-error -X GET "https://$(hostname --fqdn):4433/classifier-api/v1/groups" \
 -H "Content-Type: application/json" \
 --cert "/etc/puppetlabs/puppet/ssl/certs/$(hostname --fqdn).pem" \
 --key "/etc/puppetlabs/puppet/ssl/private_keys/$(hostname --fqdn).pem" \
@@ -112,7 +112,7 @@ id=$(curl -s -X GET "https://$(hostname --fqdn):4433/classifier-api/v1/groups" \
 | /usr/bin/jq '.[] | select(.name=="Agent-specified environment")' \
 | /usr/bin/jq -r '.["id"]')
 
-curl -X POST "https://$(hostname --fqdn):4433/classifier-api/v1/groups/$id" \
+curl --silent --show-error -X POST "https://$(hostname --fqdn):4433/classifier-api/v1/groups/$id" \
 -H "Content-Type: application/json" \
 --cert "/etc/puppetlabs/puppet/ssl/certs/$(hostname --fqdn).pem" \
 --key "/etc/puppetlabs/puppet/ssl/private_keys/$(hostname --fqdn).pem" \
