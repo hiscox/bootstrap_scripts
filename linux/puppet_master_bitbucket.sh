@@ -22,7 +22,8 @@ ssh-keygen -f /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa -N ''
 # add deploy key to control repo
 curl --silent --show-error -X POST --user "$bitbucket_username:$bitbucket_password" \
 "https://api.bitbucket.org/1.0/repositories/$bitbucket_team/$control_repo_name/deploy-keys" \
---data-urlencode "key=$(cat /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa.pub)&label=$console_url"
+--data-urlencode "key=$(cat /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa.pub)" \
+--data-urlencode "label=$console_url"
 
 # read Puppetfile and add deploy key to all repos
 curl --silent --show-error -X GET --user "$bitbucket_username:$bitbucket_password" \
@@ -32,7 +33,8 @@ curl --silent --show-error -X GET --user "$bitbucket_username:$bitbucket_passwor
 | sed -e 's|^[[:space:]]*||' | while read -r repo; do
   curl --silent --show-error -X POST --user "$bitbucket_username:$bitbucket_password" \
   "https://api.bitbucket.org/1.0/repositories/$bitbucket_team/$repo/deploy-keys" \
-  --data-urlencode "key=$(cat /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa.pub)&label=$console_url"
+  --data-urlencode "key=$(cat /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa.pub)" \
+  --data-urlencode "label=$console_url"
 done
 
 # install Puppet Enterprise"
