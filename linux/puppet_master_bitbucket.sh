@@ -97,14 +97,6 @@ chown -R pe-puppet:pe-puppet /etc/puppetlabs/puppet/eyaml
 chmod -R 0500 /etc/puppetlabs/puppet/eyaml
 chmod 0400 /etc/puppetlabs/puppet/eyaml/*.pem
 
-# code deploy
-/opt/puppetlabs/bin/puppet-code deploy --all --wait --token-file=$token_file.raw
-
-# run puppet agent a few times to complete configuration
-/opt/puppetlabs/bin/puppet agent --onetime --no-daemonize
-/opt/puppetlabs/bin/puppet agent --onetime --no-daemonize
-/opt/puppetlabs/bin/puppet agent --onetime --no-daemonize
-
 # allow agents to specify environment
 id=$(curl --silent --show-error -X GET "https://$(hostname --fqdn):4433/classifier-api/v1/groups" \
 -H "Content-Type: application/json" \
@@ -137,8 +129,14 @@ curl --silent --show-error -X POST "https://$(hostname --fqdn):4433/classifier-a
   ]
 }'
 
+# code deploy
+/opt/puppetlabs/bin/puppet-code deploy --all --wait --token-file=$token_file.raw
+
 # cleanup
 rm -rf /tmp/pe.conf
 rm -rf /tmp/keys
 rm -rf /tmp/puppet-enterprise-installer
 rm -rf /tmp/puppet-enterprise-uninstaller
+
+# puppet run
+/opt/puppetlabs/bin/puppet agent --onetime --daemonize
