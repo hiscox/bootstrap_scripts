@@ -23,7 +23,7 @@ ssh-keygen -f /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa -N ''
 curl --silent --show-error -X POST --user "$bitbucket_username:$bitbucket_password" \
 "https://api.bitbucket.org/1.0/repositories/$bitbucket_team/$control_repo_name/deploy-keys" \
 --data-urlencode "key=$(cat /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa.pub)" \
---data-urlencode "label=$console_url"
+--data-urlencode "label=$(hostname)"
 
 # read Puppetfile and add deploy key to all repos
 curl --silent --show-error -X GET --user "$bitbucket_username:$bitbucket_password" \
@@ -34,7 +34,7 @@ curl --silent --show-error -X GET --user "$bitbucket_username:$bitbucket_passwor
   curl --silent --show-error -X POST --user "$bitbucket_username:$bitbucket_password" \
   "https://api.bitbucket.org/1.0/repositories/$bitbucket_team/$repo/deploy-keys" \
   --data-urlencode "key=$(cat /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa.pub)" \
-  --data-urlencode "label=$console_url"
+  --data-urlencode "label=$(hostname)"
 done
 
 # install Puppet Enterprise"
@@ -73,7 +73,7 @@ webhook="https://$public_ip:8170/code-manager/v1/webhook?type=bitbucket&token=$t
 curl --silent --show-error -X POST --user "$bitbucket_username:$bitbucket_password" -H 'Content-Type: application/json' \
 "https://api.bitbucket.org/2.0/repositories/$bitbucket_team/$control_repo_name/hooks" --data "
 {
-  \"description\": \"$console_url\",
+  \"description\": \"$(hostname)\",
   \"url\": \"$webhook\",
   \"active\": true,
   \"skip_cert_verification\": true,
