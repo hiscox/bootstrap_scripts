@@ -56,6 +56,9 @@ echo "{
 /opt/puppetlabs/bin/puppet module install npwalker-pe_code_manager_webhook
 
 # set up code manager"
+echo "---
+code_manager_public_key: |
+$(cat /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa.pub | sed 's/^/  /')" > /opt/puppetlabs/facter/facts.d/code_manager_public_key.yaml
 chown pe-puppet:pe-puppet /etc/puppetlabs/puppetserver/ssh/id-control_repo.rsa
 chown -R pe-puppet:pe-puppet /etc/puppetlabs/code/
 /opt/puppetlabs/bin/puppet apply -e "include pe_code_manager_webhook::code_manager"
