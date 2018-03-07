@@ -83,7 +83,17 @@ function Set-Hostname($ipaddresses, $password) {
       accept        = "application/json"
     }
     $body = @{ "hostname" = "barracuda${i}"; "domain" = "azure.hiscox.com" } | ConvertTo-Json
-    Invoke-RestMethod -Method Put -Uri "$apiendpoint/system" -ContentType "application/json" -Headers $headers -Body $body -Verbose -MaximumRedirection 0 -ErrorAction SilentlyContinue
+    try {
+      Invoke-RestMethod -Method Put -Uri "$apiendpoint/system" -ContentType "application/json" -Headers $headers -Body $body -Verbose -MaximumRedirection 0 -ErrorAction SilentlyContinue
+    }
+    catch {
+      $responseStream = $_.Exception.Response.GetResponseStream()
+      $readStream = New-Object System.IO.StreamReader($responseStream)
+      $errorText = $readStream.ReadToEnd()
+      $readStream.Close()
+      $_.Exception.Response.Close()
+      throw $errorText
+    }
   }
 }
 
@@ -104,7 +114,12 @@ function Create-Cluster($ipaddresses, $password, $secret) {
       Invoke-RestMethod -Method Put -Uri "$apiendpoint/cluster" -ContentType "application/json" -Headers $headers -Body $body -Verbose -MaximumRedirection 0 -ErrorAction SilentlyContinue
     }
     catch {
-      throw $_.Exception.Response
+      $responseStream = $_.Exception.Response.GetResponseStream()
+      $readStream = New-Object System.IO.StreamReader($responseStream)
+      $errorText = $readStream.ReadToEnd()
+      $readStream.Close()
+      $_.Exception.Response.Close()
+      throw $errorText
     }
     if ($i -gt 0) {
       Start-Sleep -Seconds 120
@@ -113,7 +128,12 @@ function Create-Cluster($ipaddresses, $password, $secret) {
         Invoke-RestMethod -Method Post -Uri "$apiendpoint/cluster/nodes" -ContentType "application/json" -Headers $headers -Body $join -Verbose
       }
       catch {
-        throw $_.Exception.Response
+        $responseStream = $_.Exception.Response.GetResponseStream()
+        $readStream = New-Object System.IO.StreamReader($responseStream)
+        $errorText = $readStream.ReadToEnd()
+        $readStream.Close()
+        $_.Exception.Response.Close()
+        throw $errorText
       }
     }
   }
