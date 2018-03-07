@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
-  [array]$ipaddresses,
-  [array]$licenses,
+  [string]$ipaddresses,
+  [string]$licenses,
   [String]$sku,
   [String]$password,
   [String]$secret
@@ -119,10 +119,13 @@ function Create-Cluster($ipaddresses, $password, $secret) {
   }
 }
 
+$ipaddressesarray = [Text.Encoding]::UTF8.GetString([convert]::FromBase64String($ipaddresses)) | ConvertFrom-Json
+$licensesarray = [Text.Encoding]::UTF8.GetString([convert]::FromBase64String($licenses)) | ConvertFrom-Json
+
 Set-TrustAllCertsPolicy
-Install-License -ipaddresses $ipaddresses -licenses $licenses -sku $sku
-foreach ($ip in $ipaddresses) {
+Install-License -ipaddresses $ipaddressesarray -licenses $licensesarray -sku $sku
+foreach ($ip in $ipaddressesarray) {
   Wait-Waf -ip $ip
 }
-Set-Hostname -ipaddresses $ipaddresses -password $password
-Create-Cluster -ipaddresses $ipaddresses -password $password -secret $secret
+Set-Hostname -ipaddresses $ipaddressesarray -password $password
+Create-Cluster -ipaddresses $ipaddressesarray -password $password -secret $secret
